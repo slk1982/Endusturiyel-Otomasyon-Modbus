@@ -1,0 +1,51 @@
+Modbus'u kýrmak
+Aþaðýdaki alýþtýrmalar için , biri IP adresi atanmýþ bir Ubuntu Linux kopyasý çalýþtýran ve diðeri IP adresi atanmýþ bir Kali Linux kopyasý çalýþtýran iki sanal makine içeren bir laboratuvar kurulumu kullanýyorum . Ubuntu Linux sanal makinesi, Python'da uygulanan bir Modbus yýðýnýný çalýþtýrmak için kullanýlýr. Kali sanal makinesi bizim saldýrganýmýz olacak. Kali Linux'u seçiyorum çünkü bu, bir dizi bilgisayar korsanlýðý aracýyla önceden yüklenmiþ olarak gelen ücretsiz bir sýzma testi daðýtýmýdýr.192.168.179.131192.168.179.129
+
+Modbus sunucusunu Ubuntu VM üzerinde çalýþtýrmak için Komut Ýstemi'ni açýn ve pyModbusaþaðýdaki komutlarla modülü kurun:
+
+$ sudo apt-get install python-pip      # In case pip did not get installed 
+$ sudo pip install pyModbus
+
+
+Ardýndan, asenkron bir Modbus sunucusu baþlatmak için küçük bir komut dosyasý yazacaðýz. Seçtiðiniz metin düzenleyiciyi açýn ve aþaðýdaki komut dosyasýný yazýn:
+
+#!/usr/bin/env python
+'''
+Asynchronous Modbus Server Built in Python using the pyModbus module
+'''
+
+# Import the libraries we need
+from pymodbus.server.async import StartTcpServer
+from pymodbus.device import ModbusDeviceIdentification
+from pymodbus.datastore import ModbusSequentialDataBlock
+from pymodbus.datastore import ModbusSlaveContext, ModbusServerContext
+
+# Create a datastore and populate it with test data
+store = ModbusSlaveContext(
+    di = ModbusSequentialDataBlock(0, [17]*100),    # Discrete Inputs initializer
+    co = ModbusSequentialDataBlock(0, [17]*100),    # Coils initializer
+    hr = ModbusSequentialDataBlock(0, [17]*100),    # Holding Register initializer
+    ir = ModbusSequentialDataBlock(0, [17]*100))    # Input Registers initializer 
+context = ModbusServerContext(slaves=store, single=True)
+
+# Populate the Modbus server information fields, these get returned as
+#  response to identity queries
+identity = ModbusDeviceIdentification()
+identity.VendorName  = 'PyModbus Inc.'
+identity.ProductCode = 'PM'
+
+identity.ProductName = 'Modbus Server'
+identity.ModelName   = 'PyModbus'
+identity.MajorMinorRevision = '1.0'
+
+# Start the listening server
+print "Starting Modbus server..."
+StartTcpServer(context, identity=identity, address=("0.0.0.0", 502))
+
+
+Komut dosyasýný farklý kaydedin Modbus_server.pyve ardýndan aþaðýdaki gibi baþlatýn:
+
+$ sudo python Modbus_server.py
+Starting Modbus server...
+
+Modbus sunucu uygulamasý artýk Ubuntu VM'de çalýþýyor. Sorgu göndermeye baþlayabiliriz.
